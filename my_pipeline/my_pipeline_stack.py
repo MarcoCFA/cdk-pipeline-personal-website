@@ -1,15 +1,33 @@
-from aws_cdk import core as cdk
+from aws_cdk.core import Stack, StackProps, Construct, SecretValue
+from aws_cdk.pipelines import CdkPipeline, SimpleSynthAction
 
-# For consistency with other languages, `cdk` is the preferred import name for
-# the CDK's core module.  The following line also imports it as `core` for use
-# with examples from the CDK Developer's Guide, which are in the process of
-# being updated to use `cdk`.  You may delete this import if you don't need it.
-from aws_cdk import core
+import aws_cdk.aws_codepipeline as codepipeline
+import aws_cdk.aws_codepipeline_actions as codepipeline_actions
 
+class MyPipelineStack(Stack):
 
-class MyPipelineStack(cdk.Stack):
+    def __init__(self, scope: Construct, id: str, **kwargs) -> None:
+        super().__init__(scope, id, **kwargs)
 
-    def __init__(self, scope: cdk.Construct, construct_id: str, **kwargs) -> None:
-        super().__init__(scope, construct_id, **kwargs)
+        source_artifact = codepipeline.Artifact()
+        cloud_assembly_artifact = codepipeline.Artifact()
 
-        # The code that defines your stack goes here
+        pipeline = CdkPipeline(self, "Pipeline",
+            pipeline_name="MyAppPipeline",
+            cloud_assembly_artifact=cloud_assembly_artifact,
+            source_action=codepipeline_actions.GitHubSourceAction(
+                action_name="GitHub",
+                output=source_artifact,
+                oauth_token=SecretValue.secrets_manager("cdk-token"),
+                trigger=codepipeline_actions.GitHubTrigger.POLL,
+                # Replace these with your actual GitHub project info
+                owner="MarcoCFA",
+                repo="cdk-pipeline-personal-website"),
+            synth_action=SimpleSynthAction.standard_npm_synth(
+                source_artifact=source_artifact,
+                cloud_assembly_artifact=cloud_assembly_artifact,
+                # Use this if you need a build step (if you're not using ts-node
+                # or if you have TypeScript Lambdas that need to be compiled).
+                build_command="npm run build"
+            )
+        )

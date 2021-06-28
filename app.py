@@ -2,6 +2,7 @@
 import os
 
 from aws_cdk import core as cdk
+from my_pipeline.my_pipeline_stack import MyPipelineStack
 
 # For consistency with TypeScript code, `cdk` is the preferred import name for
 # the CDK's core module.  The following line also imports it as `core` for use
